@@ -1,0 +1,34 @@
+---
+
+- hosts: localhost
+  become: yes
+  tasks:
+  - name: timezone to UTC
+    timezone:
+      name: UTC
+
+  - name: install NGINX package
+    yum:
+      name: nginx
+      state: latest
+  
+  - name: enable nginx and firewall
+    service:
+      name: "{{ item }}"
+      state: started
+      enabled: yes
+    loop:
+      - firewalld
+      - nginx
+
+  - name: open firewall port 80
+    firewalld:
+      port: 80/tcp
+      permanent: yes
+      state: enabled
+      immediate: yes
+
+  - name: index.html content
+    copy:
+      content: "Sorry for the inconvenience but"
+      dest: /usr/share/nginx/html/index.html

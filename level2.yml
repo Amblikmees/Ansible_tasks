@@ -1,0 +1,38 @@
+---
+
+- hosts: localhost
+  become: yes
+  vars:
+    users:
+      - username: tom
+        uid: 2001
+      - username: dick
+        uid: 2002
+      - username: harry
+        uid: 3001
+    sudogroups: "{{ 'wheel' if item.uid < 3000 else '' }}"
+  tasks:
+  - name: Create new users
+    user: 
+      name: "{{ item.username }}"
+      uid: "{{ item.uid }}"
+      groups: "{{ sudogroups }}"
+    loop: "{{ users }}"
+
+  - name: X11Forwarding to yes
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '^X11Forwarding'
+      line: 'X11Forwarding yes'
+    register: sshd_config_changed
+
+  - name: restart sshd service
+    service:
+      name: sshd
+      state: restarted
+    when: sshd_config_changed.changed
+
+  - name: motd content change
+    copy:
+      content: 'Unauthorised access is not allowed on this server'
+      dest: /etc/motd
